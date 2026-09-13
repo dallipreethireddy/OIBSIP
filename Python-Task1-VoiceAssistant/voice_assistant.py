@@ -10,6 +10,11 @@ engine = pyttsx3.init()
 
 def speak(text):
     print("Assistant:", text)
+
+    # Voice settings
+    engine.setProperty("rate", 140)
+    engine.setProperty("volume", 1.0)
+
     engine.say(text)
     engine.runAndWait()
 
@@ -19,21 +24,33 @@ def listen():
 
     with sr.Microphone() as source:
         print("\nListening...")
+
+        # Adjust microphone for background noise
         recognizer.adjust_for_ambient_noise(source, duration=1)
-        audio = recognizer.listen(source)
 
-    try:
-        command = recognizer.recognize_google(audio)
-        print("You:", command)
-        return command.lower()
+        try:
+            audio = recognizer.listen(
+                source,
+                timeout=10,
+                phrase_time_limit=8
+            )
 
-    except sr.UnknownValueError:
-        speak("Sorry, I could not understand what you said.")
-        return ""
+            command = recognizer.recognize_google(audio)
 
-    except sr.RequestError:
-        speak("Sorry, there is a problem with the speech recognition service.")
-        return ""
+            print("You:", command)
+            return command.lower()
+
+        except sr.WaitTimeoutError:
+            print("No speech detected.")
+            return ""
+
+        except sr.UnknownValueError:
+            speak("Sorry, I could not understand what you said.")
+            return ""
+
+        except sr.RequestError:
+            speak("Sorry, there is a problem with the speech recognition service.")
+            return ""
 
 
 def main():
@@ -44,6 +61,10 @@ def main():
     while True:
 
         command = listen()
+
+        # If no voice was recognized, listen again
+        if command == "":
+            continue
 
         # Greeting
         if "hello" in command or "hi" in command:
@@ -70,11 +91,11 @@ def main():
                 speak("Searching for " + search_query)
 
                 webbrowser.open(
-                    "https://www.google.com/search?q=" +
-                    search_query.replace(" ", "+")
+                    "https://www.google.com/search?q="
+                    + search_query.replace(" ", "+")
                 )
 
-                # Give time to view and close Google
+                # Wait before listening again
                 time.sleep(8)
 
             else:
